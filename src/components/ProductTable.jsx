@@ -1,4 +1,8 @@
 import React, { useState } from "react";
+import DeleteIcon from "@mui/icons-material/Delete";
+import EditIcon from "@mui/icons-material/Edit";
+import CheckIcon from "@mui/icons-material/Check";
+import CloseIcon from "@mui/icons-material/Close";
 
 const ProductTable = ({ products, resources, onEdit, onRemove }) => {
   const [editingId, setEditingId] = useState(null);
@@ -119,13 +123,13 @@ const ProductTable = ({ products, resources, onEdit, onRemove }) => {
                       onClick={saveEditing}
                       className="text-green-600 hover:text-green-800"
                     >
-                      <i className="fas fa-save"></i>
+                      <CheckIcon />
                     </button>
                     <button
                       onClick={cancelEditing}
                       className="text-gray-600 hover:text-gray-800"
                     >
-                      <i className="fas fa-times"></i>
+                      <CloseIcon />
                     </button>
                   </td>
                 </tr>
@@ -157,13 +161,13 @@ const ProductTable = ({ products, resources, onEdit, onRemove }) => {
                       onClick={() => startEditing(product)}
                       className="text-blue-600 hover:text-blue-800"
                     >
-                      <i className="fas fa-edit"></i>
+                      <EditIcon />
                     </button>
                     <button
                       onClick={() => onRemove(product.id)}
-                      className="text-red-600 hover:text-red-800"
+                      className="text-red-600 hover:text-red-800 bg-transparent"
                     >
-                      <i className="fas fa-trash"></i>
+                      <DeleteIcon />
                     </button>
                   </td>
                 </tr>

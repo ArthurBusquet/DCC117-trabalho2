@@ -97,7 +97,7 @@ const ConstraintForm = ({ products, onSubmit }) => {
 
       <button
         type="submit"
-        className="w-full bg-purple-500 hover:bg-purple-600 text-white font-bold py-2 px-4 rounded-lg transition duration-200"
+        className="w-full bg-black text-white font-bold py-2 px-4 rounded-lg transition duration-200"
       >
         Adicionar Restrição
       </button>

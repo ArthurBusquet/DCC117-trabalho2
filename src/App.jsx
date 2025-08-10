@@ -19,40 +19,47 @@ function App() {
           {
             id: 1,
             name: "Sutiã",
-            cost: 8.5,
-            salePrice: 9.9,
+            cost: 3.6,
+            salePrice: 17.9,
             resources: {
-              costura: 2,
-              bojos: 2,
-              embalagem: 1,
-              corte: 2,
+              encapar_bojos: 0.2,
+              colocar_pala: 0.1,
+              colocar_vies: 0.15,
+              colocar_sandwich: 0.1,
+              finalizacao: 0.2,
             },
           },
           {
             id: 2,
             name: "Calcinha",
-            cost: 0.2,
+            cost: 2.4,
             salePrice: 14.9,
             resources: {
-              costura: 2,
-              bojos: 0,
-              embalagem: 2,
-              corte: 2,
+              encapar_bojos: 0.25,
+              colocar_pala: 0.15,
+              colocar_vies: 0.2,
+              colocar_sandwich: 0.12,
+              finalizacao: 0.22,
             },
           },
         ];
   });
 
-  // Estado para recursos
+  // Estado para recursos (capacidades por etapa)
   const [resources, setResources] = useState(() => {
     const saved = localStorage.getItem("resources");
     return saved
       ? JSON.parse(saved)
       : [
-          { id: "costura", name: "Costura (horas)", capacity: 28800 },
-          { id: "bojos", name: "Bojos (horas)", capacity: 28800 },
-          { id: "embalagem", name: "Embalagem (horas)", capacity: 28800 },
-          { id: "corte", name: "Corte (horas)", capacity: 28800 },
+          { id: "encapar_bojos", name: "Encapar Bojos (horas)", capacity: 8 },
+          { id: "colocar_pala", name: "Colocar Pala (horas)", capacity: 8 },
+          { id: "colocar_vies", name: "Colocar Viés (horas)", capacity: 24 }, // 3 funcionários móveis * 8h
+          {
+            id: "colocar_sandwich",
+            name: "Colocar Sandwich (horas)",
+            capacity: 8,
+          },
+          { id: "finalizacao", name: "Finalização (horas)", capacity: 24 }, // mesmos 3 móveis
         ];
   });
 
@@ -104,7 +111,9 @@ function App() {
   const updateResource = (id, capacity) => {
     setResources(
       resources.map((resource) =>
-        resource.id === id ? { ...resource, capacity: capacity * 10 } : resource
+        resource.id === id
+          ? { ...resource, capacity: Number(capacity) }
+          : resource
       )
     );
   };
@@ -122,6 +131,13 @@ function App() {
     setCustomConstraints(customConstraints.filter((c) => c.id !== id));
   };
 
+  // Valores para restrições móveis (mínimo e máximo horas)
+  const moveisUsoMin = 15; // horas mínimas totais para colocar_vies + finalizacao
+  const moveisUsoMax = 24; // horas máximas totais (3 funcionários * 8h)
+
+  // Participação mínima no mix (fração)
+  const minParticipation = 0.1; // 10% para todos, pode alterar
+
   // Resolver o problema
   const solve = async () => {
     setLoading(true);
@@ -129,58 +145,66 @@ function App() {
     setResults(null);
 
     try {
-      // Carregar o GLPK
       const glpk = await GLPK();
 
-      // Verificar se glpk foi carregado
       if (!glpk || !glpk.solve) {
         throw new Error("GLPK não carregado corretamente");
       }
 
-      console.log(
-        "Dados dos produtos:",
-        products.map((p) => ({
-          name: p.name,
-          lucro: p.salePrice - p.cost,
-          recursos: p.resources,
-        }))
-      );
-
-      // Preparar variáveis
+      // Variáveis e coeficientes lucro
       const variables = products.map((prod, i) => ({
         name: `x${i}`,
         coef: prod.salePrice - prod.cost,
       }));
 
-      // Preparar restrições de recursos
+      // Restrição por recurso (capacidade máxima)
       const resourceConstraints = resources.map((resource) => {
-        console.log("products:", products);
         const vars = products.map((prod, i) => ({
           name: `x${i}`,
           coef: prod.resources[resource.id] || 0,
         }));
 
-        console.log("Restrição de recurso:", resource);
-
         return {
           name: resource.id,
-          vars: vars.filter((v) => v.coef !== 0), // Filtrar coeficientes zero
+          vars: vars.filter((v) => v.coef !== 0),
           bnds: {
             type: glpk.GLP_UP,
             ub: resource.capacity,
-            lb: 0, // Não permitir produção negativa
+            lb: 0,
           },
         };
       });
 
-      // Preparar restrições personalizadas
+      // Restrição para funcionários móveis - soma (colocar_vies + finalizacao) ≤ capacidade máxima
+      resourceConstraints.push({
+        name: "moveis_max",
+        vars: products.map((prod, i) => ({
+          name: `x${i}`,
+          coef:
+            (prod.resources.colocar_vies || 0) +
+            (prod.resources.finalizacao || 0),
+        })),
+        bnds: { type: glpk.GLP_UP, ub: moveisUsoMax, lb: 0 },
+      });
+
+      // // Restrição para funcionários móveis - soma (colocar_vies + finalizacao) ≥ capacidade mínima
+      // resourceConstraints.push({
+      //   name: "moveis_min",
+      //   vars: products.flatMap((prod, i) => [
+      //     { name: `x${i}`, coef: prod.resources.colocar_vies || 0 },
+      //     { name: `x${i}`, coef: prod.resources.finalizacao || 0 },
+      //   ]),
+      //   bnds: { type: glpk.GLP_LO, lb: moveisUsoMin, ub: 0 },
+      // });
+
+      // Restrições personalizadas já adicionadas pelo usuário
       const customConstraintsList = customConstraints.map((constraint, idx) => {
         const vars = products
           .map((prod, i) => ({
             name: `x${i}`,
             coef: constraint.coefficients[i] || 0,
           }))
-          .filter((v) => v.coef !== 0); // Filtrar coeficientes zero
+          .filter((v) => v.coef !== 0);
 
         return {
           name: `constraint_${idx}`,
@@ -202,11 +226,27 @@ function App() {
         };
       });
 
-      // Combinar todas as restrições
+      // Restrições de participação mínima no mix
+      // Para cada produto: x_i >= minParticipation * soma(x_j)  ⇒  x_i - minParticipation*sum_j x_j ≥ 0
+      const participationConstraints = products.map((_, i) => {
+        const vars = products.map((_, j) => ({
+          name: `x${j}`,
+          coef: i === j ? 1 - minParticipation : -minParticipation,
+        }));
+
+        return {
+          name: `min_participation_${i}`,
+          vars,
+          bnds: { type: glpk.GLP_LO, lb: 0, ub: 1 },
+        };
+      });
+
+      // Juntar todas restrições
       const allConstraints = [
         ...resourceConstraints,
         ...customConstraintsList,
-      ].filter((c) => c.vars.length > 0); // Remover restrições vazias
+        ...participationConstraints,
+      ].filter((c) => c.vars.length > 0);
 
       // Criar modelo
       const model = {
@@ -216,32 +256,31 @@ function App() {
           name: "lucro",
           vars: variables,
         },
-        subjectTo: resourceConstraints,
+        subjectTo: allConstraints,
         binaries: [],
         generals: products.map((_, i) => `x${i}`),
       };
 
-      // Verificar modelo antes de resolver
+      // Debug modelo
       console.log("Modelo enviado para GLPK:", model);
 
       // Resolver
-      const result = await glpk.solve(model, {
+      const response = await glpk.solve(model, {
         msglev: glpk.GLP_MSG_ALL,
         presol: true,
-        cb: {
-          call: (progress) => console.log(progress),
-          each: 1,
-        },
       });
 
-      console.log("Resultado do GLPK:", result);
+      console.log("Resultado do GLPK:", response);
 
-      if (result.status === 5 || result.status === glpk.GLP_FEAS) {
+      if (
+        response.result.status === glpk.GLP_OPT ||
+        response.result.status === glpk.GLP_FEAS
+      ) {
         setResults({
-          profit: result.result.z,
+          profit: response.result.z,
           production: products.map((prod, i) => ({
             name: prod.name,
-            quantity: result.result.vars[`x${i}`],
+            quantity: response.result.vars[`x${i}`],
           })),
         });
       } else {
@@ -357,7 +396,7 @@ function App() {
         <button
           onClick={solve}
           disabled={loading || products.length === 0}
-          className={`px-6 py-3 rounded-lg text-white font-bold ${
+          className={`w-80 px-6 py-3 rounded-lg text-white font-bold ${
             loading || products.length === 0
               ? "bg-black cursor-not-allowed"
               : "bg-green-500 hover:bg-green-600"
