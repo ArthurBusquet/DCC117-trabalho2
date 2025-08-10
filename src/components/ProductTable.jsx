@@ -1,3 +1,4 @@
+// src/components/ProductTable.js
 import React, { useState } from "react";
 import DeleteIcon from "@mui/icons-material/Delete";
 import EditIcon from "@mui/icons-material/Edit";
@@ -28,7 +29,11 @@ const ProductTable = ({ products, resources, onEdit, onRemove }) => {
     const { name, value } = e.target;
     setEditForm((prev) => ({
       ...prev,
-      [name]: name.startsWith("resource_") ? parseFloat(value) || 0 : value,
+      [name]: name.startsWith("resource_")
+        ? parseFloat(value) || 0
+        : name === "weeklyMin" || name === "weeklyMax"
+        ? parseInt(value, 10) || 0
+        : value,
     }));
   };
 
@@ -61,6 +66,13 @@ const ProductTable = ({ products, resources, onEdit, onRemove }) => {
               ))}
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Lucro Unit.
+              </th>
+              {/* Novas colunas para weeklyMin e weeklyMax */}
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Min. Semanal
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Max. Semanal
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Ações
@@ -118,6 +130,27 @@ const ProductTable = ({ products, resources, onEdit, onRemove }) => {
                   <td className="px-6 py-4 whitespace-nowrap">
                     {(editForm.salePrice - editForm.cost).toFixed(2)}
                   </td>
+                  {/* Campos de edição para weeklyMin e weeklyMax */}
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <input
+                      type="number"
+                      min="0"
+                      name="weeklyMin"
+                      value={editForm.weeklyMin}
+                      onChange={handleEditChange}
+                      className="w-full px-2 py-1 border border-gray-300 rounded"
+                    />
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <input
+                      type="number"
+                      min="0"
+                      name="weeklyMax"
+                      value={editForm.weeklyMax}
+                      onChange={handleEditChange}
+                      className="w-full px-2 py-1 border border-gray-300 rounded"
+                    />
+                  </td>
                   <td className="px-6 py-4 whitespace-nowrap space-x-2">
                     <button
                       onClick={saveEditing}
@@ -149,12 +182,18 @@ const ProductTable = ({ products, resources, onEdit, onRemove }) => {
                       key={resource.id}
                       className="px-6 py-4 whitespace-nowrap"
                     >
-                      {product.resources[resource.id] || 0}{" "}
-                      {resource.id === "corte" ? "peças/hora" : "segundos"}
+                      {product.resources[resource.id] || 0} horas
                     </td>
                   ))}
                   <td className="px-6 py-4 whitespace-nowrap">
                     R$ {(product.salePrice - product.cost).toFixed(2)}
+                  </td>
+                  {/* Exibição dos valores de weeklyMin e weeklyMax */}
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    {product.weeklyMin}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    {product.weeklyMax}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap space-x-2">
                     <button

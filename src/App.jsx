@@ -176,18 +176,6 @@ function App() {
   const removeConstraint = (id) =>
     setCustomConstraints(customConstraints.filter((c) => c.id !== id));
 
-  // ----- Configurações do modelo -----
-  const minParticipation = 0.05; // 5% do mix semanal
-
-  // Configurações realistas para horas extras
-  const overtimeConfig = {
-    encapar_bojos: { maxPerDay: 4, costPerHour: 6 },
-    colocar_pala: { maxPerDay: 4, costPerHour: 6 },
-    colocar_vies: { maxPerDay: 4, costPerHour: 6 },
-    colocar_sandwich: { maxPerDay: 4, costPerHour: 6 },
-    finalizacao: { maxPerDay: 4, costPerHour: 6 },
-  };
-
   // Validação antes de resolver
   const validateInputs = () => {
     const errors = [];
@@ -217,6 +205,41 @@ function App() {
     return errors.length === 0;
   };
 
+  // Verificar viabilidade do modelo
+  const checkFeasibility = () => {
+    // Calcular a demanda mínima total de recursos
+    const minResourceDemand = {};
+    resources.forEach((res) => {
+      minResourceDemand[res.id] = 0;
+    });
+
+    products.forEach((prod) => {
+      resources.forEach((res) => {
+        const resourceTime = prod.resources[res.id] || 0;
+        minResourceDemand[res.id] += prod.weeklyMin * resourceTime;
+      });
+    });
+
+    // Verificar se a demanda mínima excede a capacidade
+    const feasibilityIssues = [];
+    resources.forEach((res) => {
+      const totalCapacity = res.capacity * days.length;
+      if (minResourceDemand[res.id] > totalCapacity) {
+        feasibilityIssues.push(
+          `Recurso ${res.name} sobrecarregado! ` +
+            `Demanda mínima: ${minResourceDemand[res.id].toFixed(2)}h, ` +
+            `Capacidade total: ${totalCapacity}h`
+        );
+      }
+    });
+
+    if (feasibilityIssues.length > 0) {
+      setValidationErrors(feasibilityIssues);
+      return false;
+    }
+    return true;
+  };
+
   // Resolver o modelo
   const solve = async () => {
     console.log("Resolvendo modelo com GLPK...");
@@ -231,17 +254,20 @@ function App() {
       return;
     }
 
+    // Verificar viabilidade
+    if (!checkFeasibility()) {
+      setLoading(false);
+      return;
+    }
+
     try {
-      console.log("teste 1");
       const glpk = await GLPK();
 
       if (!glpk || !glpk.solve) {
         throw new Error("GLPK não carregado corretamente");
       }
 
-      console.log("teste 2");
-
-      // Construir variáveis
+      // Construir variáveis (contínuas)
       const variables = [];
 
       // Variáveis de produção
@@ -254,26 +280,10 @@ function App() {
         });
       });
 
-      // Variáveis overtime
-      const overtimeResources = Object.keys(overtimeConfig);
-      overtimeResources.forEach((resId) => {
-        days.forEach((dayKey) => {
-          variables.push({
-            name: `o_${resId}_${dayKey}`,
-            coef: -overtimeConfig[resId].costPerHour, // custo reduz lucro
-          });
-        });
-      });
-
-      // Lista de variáveis inteiras (produção)
-      const generals = products.flatMap((_, i) =>
-        days.map((dayKey) => `x_${i}_${dayKey}`)
-      );
-
-      // ========= Restrições =========
+      // ========= restrições =========
       const subjectTo = [];
 
-      // 1) Restrições de capacidade por recurso por dia
+      // 1) restrições de capacidade por recurso por dia
       resources.forEach((res) => {
         days.forEach((dayKey) => {
           // Coeficientes dos produtos
@@ -282,42 +292,15 @@ function App() {
             coef: prod.resources[res.id] || 0,
           }));
 
-          // Se recurso permite overtime, adiciona variável overtime
-          const overtimeVarName = overtimeConfig[res.id]
-            ? `o_${res.id}_${dayKey}`
-            : null;
-
-          // const vars = overtimeVarName
-          //   ? [...prodVars, { name: overtimeVarName, coef: -1 }]
-          //   : prodVars;
-
-          const vars = prodVars;
-
-          // Capacidade base + horas extras (devido ao -1 no overtime)
           subjectTo.push({
             name: `cap_${res.id}_${dayKey}`,
-            vars: vars.filter((v) => v.coef !== 0),
+            vars: prodVars.filter((v) => v.coef !== 0),
             bnds: { type: glpk.GLP_UP, ub: res.capacity, lb: 0 },
           });
         });
       });
 
-      // 2) Limites de overtime por recurso por dia
-      overtimeResources.forEach((resId) => {
-        days.forEach((dayKey) => {
-          subjectTo.push({
-            name: `overtime_bound_${resId}_${dayKey}`,
-            vars: [{ name: `o_${resId}_${dayKey}`, coef: 1 }],
-            bnds: {
-              type: glpk.GLP_DB,
-              lb: 0,
-              ub: overtimeConfig[resId].maxPerDay,
-            },
-          });
-        });
-      });
-
-      // 3) Demanda semanal para cada produto
+      // 2) Demanda semanal para cada produto
       products.forEach((prod, i) => {
         // Soma diária <= weeklyMax
         subjectTo.push({
@@ -334,7 +317,7 @@ function App() {
         });
       });
 
-      // 4) Restrições personalizadas
+      // 3) Restrições personalizadas
       customConstraints.forEach((c, idx) => {
         const vars = [];
         products.forEach((prod, i) => {
@@ -368,32 +351,6 @@ function App() {
         }
       });
 
-      // 5) Diversificação (participation constraint)
-      products.forEach((_, i) => {
-        const vars = [];
-
-        // Coef para produto i
-        days.forEach((dayKey) =>
-          vars.push({ name: `x_${i}_${dayKey}`, coef: 1 - minParticipation })
-        );
-
-        // Coef para outros produtos
-        products.forEach((_, j) => {
-          if (j === i) return;
-          days.forEach((dayKey) =>
-            vars.push({ name: `x_${j}_${dayKey}`, coef: -minParticipation })
-          );
-        });
-
-        subjectTo.push({
-          name: `min_participation_prod_${i}`,
-          vars: vars.filter((v) => v.coef !== 0),
-          bnds: { type: glpk.GLP_LO, lb: 0, ub: 0 },
-        });
-      });
-
-      console.log("teste 3");
-
       // ===== Montar modelo =====
       const model = {
         name: "Mix_Producao_Semanal",
@@ -403,31 +360,24 @@ function App() {
           vars: variables,
         },
         subjectTo,
-        generals, // Variáveis de produção como inteiras
-        options: {
-          msglev: glpk.GLP_MSG_ON,
-          presol: true,
-        },
       };
-
-      console.log("teste 4", model);
 
       // Resolver o modelo
       const solverResponse = await glpk.solve(model, {
-        msglev: glpk.GLP_MSG_OFF,
-        presol: true,
+        msglev: glpk.GLP_MSG_OFF, // Desligar mensagens para melhor performance
+        presol: true, // Usar pré-solucionador
+        tmlim: 5, // Limite de tempo de 5 segundos
+        tolr: 1e-4, // Tolerância relativa
+        tolb: 1e-4, // Tolerância absoluta
       });
 
-      console.log("teste 5", model);
-
-      console.log("solverResponse:", solverResponse);
+      console.log("Solver response:", solverResponse);
 
       // Verificar resultado
       if (
         !solverResponse ||
         !solverResponse.result ||
-        typeof solverResponse.result.z === "undefined" ||
-        solverResponse.result.status !== glpk.GLP_OPT
+        typeof solverResponse.result.z === "undefined"
       ) {
         const statusMsg =
           {
@@ -437,13 +387,13 @@ function App() {
             [glpk.GLP_NOFEAS]: "Sem solução viável",
             [glpk.GLP_UNBND]: "Problema ilimitado",
             [glpk.GLP_UNDEF]: "Solução indefinida",
-          }[solverResponse.status] ||
-          `Status desconhecido: ${solverResponse.status}`;
+          }[solverResponse.result.status] ||
+          `Status desconhecido: ${solverResponse.result.status}`;
 
         throw new Error(`Solver retornou: ${statusMsg}`);
       }
 
-      // Construir resultado detalhado
+      // Construir resultado detalhado (arredondando as quantidades)
       const production = products.map((prod, i) => {
         const dailyQuantities = days.map((dayKey) => {
           const varName = `x_${i}_${dayKey}`;
@@ -458,23 +408,10 @@ function App() {
         };
       });
 
-      // Extrair overtime usado
-      const overtimeUsed = {};
-      overtimeResources.forEach((resId) => {
-        overtimeUsed[resId] = {};
-        days.forEach((dayKey) => {
-          const varName = `o_${resId}_${dayKey}`;
-          overtimeUsed[resId][dayKey] = Number(
-            solverResponse.result.vars[varName] || 0
-          );
-        });
-      });
-
       setResults({
         profit: solverResponse.result.z,
         production,
-        overtimeUsed,
-        status: solverResponse.status,
+        status: solverResponse.result.status,
       });
     } catch (err) {
       console.error(err);
