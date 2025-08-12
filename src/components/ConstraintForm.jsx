@@ -1,32 +1,43 @@
 import React, { useState } from "react";
 
 const ConstraintForm = ({ products, onSubmit }) => {
-  const [name, setName] = useState("");
-  const [type, setType] = useState("<=");
-  const [value, setValue] = useState("");
-  const [coefficients, setCoefficients] = useState(products.map(() => 0));
+  const [constraintName, setConstraintName] = useState("");
+  const [constraintType, setConstraintType] = useState(">=");
+  const [constraintValue, setConstraintValue] = useState("");
+  const [coefficients, setCoefficients] = useState({});
+
+  const handleCoefficientChange = (productId, value) => {
+    setCoefficients({
+      ...coefficients,
+      [productId]: value,
+    });
+  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
 
-    const numericCoefficients = coefficients.map((c) =>
-      typeof c === "string" ? parseFloat(c) || 0 : c
+    if (isNaN(constraintValue)) {
+      alert("Valor da restrição deve ser um número");
+      return;
+    }
+
+    const productIds = products.map((p) => p.id);
+    const coefficientsArray = productIds.map(
+      (id) => parseFloat(coefficients[id]) || 0
     );
 
-    const constraint = {
-      name,
-      type,
-      value: parseFloat(value),
-      coefficients: numericCoefficients,
-    };
+    onSubmit({
+      name: constraintName,
+      type: constraintType,
+      value: parseFloat(constraintValue),
+      productIds,
+      coefficients: coefficientsArray,
+    });
 
-    onSubmit(constraint);
-
-    // Reset form
-    setName("");
-    setType("<=");
-    setValue("");
-    setCoefficients(products.map(() => 0));
+    setConstraintName("");
+    setConstraintType(">=");
+    setConstraintValue("");
+    setCoefficients({});
   };
 
   return (
@@ -37,8 +48,8 @@ const ConstraintForm = ({ products, onSubmit }) => {
         </label>
         <input
           type="text"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
+          value={constraintName}
+          onChange={(e) => setConstraintName(e.target.value)}
           className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
           required
         />
@@ -48,8 +59,8 @@ const ConstraintForm = ({ products, onSubmit }) => {
         <div>
           <label className="block text-gray-700 font-medium mb-1">Tipo</label>
           <select
-            value={type}
-            onChange={(e) => setType(e.target.value)}
+            value={constraintType}
+            onChange={(e) => setConstraintType(e.target.value)}
             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
           >
             <option value="<=">{"<="} (Menor ou igual)</option>
@@ -63,8 +74,8 @@ const ConstraintForm = ({ products, onSubmit }) => {
           <input
             type="number"
             step="0.01"
-            value={value}
-            onChange={(e) => setValue(e.target.value)}
+            value={constraintValue}
+            onChange={(e) => setConstraintValue(e.target.value)}
             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
             required
           />
@@ -82,12 +93,10 @@ const ConstraintForm = ({ products, onSubmit }) => {
               <input
                 type="number"
                 step="0.01"
-                value={coefficients[i] || ""}
-                onChange={(e) => {
-                  const newCoefficients = [...coefficients];
-                  newCoefficients[i] = e.target.value;
-                  setCoefficients(newCoefficients);
-                }}
+                value={coefficients[product.id] || ""}
+                onChange={(e) =>
+                  handleCoefficientChange(product.id, e.target.value)
+                }
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
               />
             </div>

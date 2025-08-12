@@ -1,0 +1,77 @@
+[
+  {
+    "id": 1,
+    "name": "ST 325",
+    "cost": 13.62,
+    "salePrice": 20.9,
+    "resources": {
+      "encapar_bojos": 150,
+      "colocar_pala": 120,
+      "colocar_vies": 90,
+      "colocar_sandwich": 60,
+      "finalizacao": 180
+    },
+    "weeklyMin": 60,
+    "weeklyMax": 1000
+  },
+  {
+    "id": 2,
+    "name": "ST 460",
+    "cost": 8.59,
+    "salePrice": 18.5,
+    "resources": {
+      "encapar_bojos": 144,
+      "colocar_pala": 138,
+      "colocar_vies": 84,
+      "colocar_sandwich": 75,
+      "finalizacao": 186
+    },
+    "weeklyMin": 50,
+    "weeklyMax": 700
+  },
+  {
+    "id": 3,
+    "name": "ST 452",
+    "cost": 10.97,
+    "salePrice": 18.9,
+    "resources": {
+      "encapar_bojos": 156,
+      "colocar_pala": 120,
+      "colocar_vies": 108,
+      "colocar_sandwich": 84,
+      "finalizacao": 192
+    },
+    "weeklyMin": 40,
+    "weeklyMax": 900
+  },
+  {
+    "id": 4,
+    "name": "ST 448",
+    "cost": 12.2,
+    "salePrice": 22.0,
+    "resources": {
+      "encapar_bojos": 180,
+      "colocar_pala": 150,
+      "colocar_vies": 132,
+      "colocar_sandwich": 105,
+      "finalizacao": 210
+    },
+    "weeklyMin": 30,
+    "weeklyMax": 500
+  },
+  {
+    "id": 5,
+    "name": "ST 420",
+    "cost": 12.29,
+    "salePrice": 20.9,
+    "resources": {
+      "encapar_bojos": 168,
+      "colocar_pala": 138,
+      "colocar_vies": 120,
+      "colocar_sandwich": 96,
+      "finalizacao": 198
+    },
+    "weeklyMin": 20,
+    "weeklyMax": 800
+  }
+]

@@ -22,7 +22,7 @@ const ResourceTable = ({ resources }) => {
             <tr key={resource.id}>
               <td className="px-6 py-4 whitespace-nowrap">{resource.name}</td>
               <td className="px-6 py-4 whitespace-nowrap">
-                {resource.capacity} segundos
+                {resource.capacity} horas
               </td>
             </tr>
           ))}

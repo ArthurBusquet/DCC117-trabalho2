@@ -182,7 +182,7 @@ const ProductTable = ({ products, resources, onEdit, onRemove }) => {
                       key={resource.id}
                       className="px-6 py-4 whitespace-nowrap"
                     >
-                      {product.resources[resource.id] || 0} horas
+                      {product.resources[resource.id] || 0} segundos
                     </td>
                   ))}
                   <td className="px-6 py-4 whitespace-nowrap">

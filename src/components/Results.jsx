@@ -1,8 +1,86 @@
 import React from "react";
 
+// Definindo constantes de status manualmente
+const GLPK_STATUS = {
+  GLP_UNDEF: 1, // Solução indefinida
+  GLP_FEAS: 2, // Solução viável
+  GLP_INFEAS: 3, // Solução inviável
+  GLP_NOFEAS: 4, // Sem solução viável (problema impossível)
+  GLP_OPT: 5, // Solução ótima encontrada
+  GLP_UNBND: 6, // Solução ilimitada
+};
+
 const Results = ({ results }) => {
-  console.log("results", results);
-  const days = ["seg", "ter", "qua", "qui", "sex"]; // 5 dias úteis
+  const days = ["seg", "ter", "qua", "qui", "sex"];
+
+  // Verificar se não há solução viável
+  if (results.status === GLPK_STATUS.GLP_NOFEAS) {
+    return (
+      <div className="mt-8 bg-white rounded-lg shadow-lg p-6">
+        <h2 className="text-2xl font-bold text-red-700 mb-4">
+          Problema Impossível
+        </h2>
+
+        <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4">
+          <p className="font-bold">
+            Não foi possível encontrar uma solução viável.
+          </p>
+          <p>
+            Por favor, revise as restrições adicionais e os limites de produção.
+          </p>
+
+          <p className="mt-3">Possíveis causas:</p>
+          <ul className="list-disc pl-5 mt-2">
+            <li>Restrições conflitantes ou muito restritivas</li>
+            <li>Limites mínimos de produção muito altos</li>
+            <li>Recursos insuficientes para atender a demanda mínima</li>
+            <li>Combinação de restrições que não permitem solução</li>
+          </ul>
+
+          <p className="mt-3 font-medium">Sugestões:</p>
+          <ul className="list-disc pl-5 mt-2">
+            <li>Verifique as restrições personalizadas</li>
+            <li>Reduza os valores mínimos de produção</li>
+            <li>Aumente a capacidade dos recursos críticos</li>
+            <li>Relaxe algumas restrições de igualdade</li>
+          </ul>
+        </div>
+      </div>
+    );
+  }
+
+  // Se houver outros erros (não GLP_NOFEAS)
+  if (
+    results.status !== GLPK_STATUS.GLP_OPT &&
+    results.status !== GLPK_STATUS.GLP_FEAS
+  ) {
+    const statusMessages = {
+      [GLPK_STATUS.GLP_INFEAS]: "Solução inviável",
+      [GLPK_STATUS.GLP_UNBND]: "Problema ilimitado",
+      [GLPK_STATUS.GLP_UNDEF]: "Solução indefinida",
+    };
+
+    const statusMessage =
+      statusMessages[results.status] || "Status desconhecido";
+
+    return (
+      <div className="mt-8 bg-white rounded-lg shadow-lg p-6">
+        <h2 className="text-2xl font-bold text-red-700 mb-4">
+          Problema na Otimização
+        </h2>
+
+        <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4">
+          <p className="font-bold">Status do solver: {statusMessage}</p>
+          <p className="mt-2">
+            O solver não conseguiu encontrar uma solução satisfatória. Tente
+            ajustar os parâmetros ou simplificar as restrições.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // Exibição normal dos resultados
   return (
     <div className="mt-8 bg-white rounded-lg shadow-lg p-6">
       <h2 className="text-2xl font-bold text-green-700 mb-4">
@@ -16,6 +94,11 @@ const Results = ({ results }) => {
           <p className="text-3xl font-bold text-green-700 mt-2">
             R$ {results.profit.toFixed(2)}
           </p>
+          {results.manualProfit && (
+            <p className="text-sm mt-2">
+              (Verificação: R$ {results.manualProfit.toFixed(2)})
+            </p>
+          )}
         </div>
       </div>
 

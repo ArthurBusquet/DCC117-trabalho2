@@ -14,88 +14,7 @@ function App() {
   const days = ["seg", "ter", "qua", "qui", "sex"]; // 5 dias úteis
 
   // Estado para produtos
-  const [products, setProducts] = useState(() => {
-    const saved = localStorage.getItem("products");
-    return saved
-      ? JSON.parse(saved)
-      : [
-          {
-            id: 1,
-            name: "Sutiã Básico",
-            cost: 8.5,
-            salePrice: 19.9,
-            resources: {
-              encapar_bojos: 0.15, // 9 minutos
-              colocar_pala: 0.1, // 6 minutos
-              colocar_vies: 0.12, // 7.2 minutos
-              colocar_sandwich: 0.08, // 4.8 minutos
-              finalizacao: 0.12, // 7.2 minutos
-            },
-            weeklyMin: 60,
-            weeklyMax: 1000,
-          },
-          {
-            id: 2,
-            name: "Sutiã com Renda",
-            cost: 12.0,
-            salePrice: 29.9,
-            resources: {
-              encapar_bojos: 0.18, // 10.8 minutos
-              colocar_pala: 0.12, // 7.2 minutos
-              colocar_vies: 0.15, // 9 minutos
-              colocar_sandwich: 0.1, // 6 minutos
-              finalizacao: 0.14, // 8.4 minutos
-            },
-            weeklyMin: 50,
-            weeklyMax: 700,
-          },
-          {
-            id: 3,
-            name: "Sutiã Esportivo",
-            cost: 10.0,
-            salePrice: 24.9,
-            resources: {
-              encapar_bojos: 0.12, // 7.2 minutos
-              colocar_pala: 0.09, // 5.4 minutos
-              colocar_vies: 0.1, // 6 minutos
-              colocar_sandwich: 0.07, // 4.2 minutos
-              finalizacao: 0.1, // 6 minutos
-            },
-            weeklyMin: 40,
-            weeklyMax: 900,
-          },
-          {
-            id: 4,
-            name: "Sutiã Push-Up",
-            cost: 14.0,
-            salePrice: 34.9,
-            resources: {
-              encapar_bojos: 0.2, // 12 minutos
-              colocar_pala: 0.15, // 9 minutos
-              colocar_vies: 0.18, // 10.8 minutos
-              colocar_sandwich: 0.12, // 7.2 minutos
-              finalizacao: 0.15, // 9 minutos
-            },
-            weeklyMin: 30,
-            weeklyMax: 500,
-          },
-          {
-            id: 5,
-            name: "Sutiã Sem Costura",
-            cost: 13.5,
-            salePrice: 32.9,
-            resources: {
-              encapar_bojos: 0.14, // 8.4 minutos
-              colocar_pala: 0.11, // 6.6 minutos
-              colocar_vies: 0.13, // 7.8 minutos
-              colocar_sandwich: 0.1, // 6 minutos
-              finalizacao: 0.13, // 7.8 minutos
-            },
-            weeklyMin: 20,
-            weeklyMax: 800,
-          },
-        ];
-  });
+  const [products, setProducts] = useState([]);
 
   // Estado para recursos
   const [resources, setResources] = useState(() => {
@@ -105,21 +24,21 @@ function App() {
       : [
           {
             id: "encapar_bojos",
-            name: "Encapar Bojos (horas/dia)",
+            name: "Encapar Bojos",
             capacity: 8,
           },
-          { id: "colocar_pala", name: "Colocar Pala (horas/dia)", capacity: 8 },
+          { id: "colocar_pala", name: "Colocar Pala", capacity: 8 },
           {
             id: "colocar_vies",
-            name: "Colocar Viés (horas/dia)",
+            name: "Colocar Viés",
             capacity: 24,
           },
           {
             id: "colocar_sandwich",
-            name: "Colocar Sandwich (horas/dia)",
+            name: "Colocar Sandwich",
             capacity: 8,
           },
-          { id: "finalizacao", name: "Finalização (horas/dia)", capacity: 24 },
+          { id: "finalizacao", name: "Finalização", capacity: 24 },
         ];
   });
 
@@ -133,6 +52,32 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [validationErrors, setValidationErrors] = useState([]);
+
+  useEffect(() => {
+    const loadProducts = async () => {
+      try {
+        const response = await fetch("/products.json");
+        const data = await response.json();
+
+        console.log("data:", data);
+
+        // Verificar se já temos produtos salvos no localStorage
+        const savedProducts = localStorage.getItem("products");
+
+        if (JSON.parse(savedProducts).length > 0) {
+          console.log("teste", savedProducts);
+          setProducts(JSON.parse(savedProducts));
+        } else {
+          setProducts(data);
+        }
+      } catch (error) {
+        console.error("Erro ao carregar produtos:", error);
+        setProducts([]);
+      }
+    };
+
+    loadProducts();
+  }, []);
 
   // Persistência
   useEffect(() => {
@@ -151,21 +96,46 @@ function App() {
   }, [customConstraints]);
 
   // CRUDs
-  const addProduct = (product) =>
+  const addProduct = (product) => {
+    if (products.some((p) => p.name === product.name)) {
+      setValidationErrors((prev) => [
+        ...prev,
+        `Já existe um produto com o nome "${product.name}"`,
+      ]);
+      return;
+    }
     setProducts([...products, { ...product, id: Date.now() }]);
+  };
 
-  const updateProduct = (id, updatedProduct) =>
+  const updateProduct = (id, updatedProduct) => {
+    const otherProducts = products.filter((p) => p.id !== id);
+    if (otherProducts.some((p) => p.name === updatedProduct.name)) {
+      setValidationErrors((prev) => [
+        ...prev,
+        `Já existe um produto com o nome "${updatedProduct.name}"`,
+      ]);
+      return;
+    }
     setProducts(products.map((p) => (p.id === id ? updatedProduct : p)));
+  };
 
   const removeProduct = (id) =>
     setProducts(products.filter((p) => p.id !== id));
 
-  const updateResource = (id, capacity) =>
+  const updateResource = (id, capacity) => {
+    if (isNaN(capacity) || capacity < 0) {
+      setValidationErrors((prev) => [
+        ...prev,
+        `Capacidade inválida para o recurso ${id}`,
+      ]);
+      return;
+    }
     setResources(
       resources.map((r) =>
         r.id === id ? { ...r, capacity: Number(capacity) } : r
       )
     );
+  };
 
   const addConstraint = (constraint) =>
     setCustomConstraints([
@@ -176,25 +146,24 @@ function App() {
   const removeConstraint = (id) =>
     setCustomConstraints(customConstraints.filter((c) => c.id !== id));
 
+  const secondsToHours = (seconds) => seconds / 3600;
+
   // Validação antes de resolver
   const validateInputs = () => {
     const errors = [];
 
-    // Verificar se todos os recursos têm capacidade válida
     resources.forEach((res) => {
-      if (isNaN(res.capacity)) {
+      if (isNaN(res.capacity) || res.capacity < 0) {
         errors.push(`Capacidade inválida para ${res.name}`);
       }
     });
 
-    // Verificar limites de produção
     products.forEach((prod) => {
       if (prod.weeklyMin > prod.weeklyMax) {
-        errors.push(`Produto ${prod.name}: Mínimo semanal maior que máximo`);
+        errors.push(`Produto ${prod.name}: Mínimo > Máximo`);
       }
     });
 
-    // Verificar restrições personalizadas
     customConstraints.forEach((c) => {
       if (isNaN(c.value)) {
         errors.push(`Restrição "${c.name}" tem valor inválido`);
@@ -207,20 +176,17 @@ function App() {
 
   // Verificar viabilidade do modelo
   const checkFeasibility = () => {
-    // Calcular a demanda mínima total de recursos
     const minResourceDemand = {};
-    resources.forEach((res) => {
-      minResourceDemand[res.id] = 0;
-    });
+    resources.forEach((res) => (minResourceDemand[res.id] = 0));
 
-    products.forEach((prod) => {
+    products.forEach((prod) =>
       resources.forEach((res) => {
         const resourceTime = prod.resources[res.id] || 0;
-        minResourceDemand[res.id] += prod.weeklyMin * resourceTime;
-      });
-    });
+        const resourceTimeInHours = secondsToHours(resourceTime);
+        minResourceDemand[res.id] += prod.weeklyMin * resourceTimeInHours;
+      })
+    );
 
-    // Verificar se a demanda mínima excede a capacidade
     const feasibilityIssues = [];
     resources.forEach((res) => {
       const totalCapacity = res.capacity * days.length;
@@ -228,7 +194,7 @@ function App() {
         feasibilityIssues.push(
           `Recurso ${res.name} sobrecarregado! ` +
             `Demanda mínima: ${minResourceDemand[res.id].toFixed(2)}h, ` +
-            `Capacidade total: ${totalCapacity}h`
+            `Capacidade: ${totalCapacity}h`
         );
       }
     });
@@ -242,13 +208,12 @@ function App() {
 
   // Resolver o modelo
   const solve = async () => {
-    console.log("Resolvendo modelo com GLPK...");
     setLoading(true);
     setError("");
     setResults(null);
     setValidationErrors([]);
 
-    // Validar inputs antes de resolver
+    // Validação básica
     if (!validateInputs()) {
       setLoading(false);
       return;
@@ -262,70 +227,72 @@ function App() {
 
     try {
       const glpk = await GLPK();
-
-      if (!glpk || !glpk.solve) {
+      if (!glpk || !glpk.solve)
         throw new Error("GLPK não carregado corretamente");
-      }
 
-      // Construir variáveis (contínuas)
-      const variables = [];
+      // Construir variáveis de produção (INTEIRAS)
+      const variables = products.flatMap((prod, i) =>
+        days.map((dayKey) => ({
+          name: `x_${i}_${dayKey}`,
+          coef: prod.salePrice - prod.cost,
+          type: glpk.GLP_IV, // VARIÁVEL INTEIRA
+        }))
+      );
 
-      // Variáveis de produção
-      products.forEach((prod, i) => {
-        days.forEach((dayKey) => {
-          variables.push({
-            name: `x_${i}_${dayKey}`,
-            coef: prod.salePrice - prod.cost, // lucro unitário
-          });
-        });
-      });
-
-      // ========= restrições =========
+      // Construir restrições
       const subjectTo = [];
 
-      // 1) restrições de capacidade por recurso por dia
+      // 1) Restrições de capacidade
       resources.forEach((res) => {
         days.forEach((dayKey) => {
-          // Coeficientes dos produtos
-          const prodVars = products.map((prod, i) => ({
-            name: `x_${i}_${dayKey}`,
-            coef: prod.resources[res.id] || 0,
-          }));
+          const prodVars = products.map((prod, i) => {
+            const resourceTime = prod.resources[res.id] || 0;
+
+            const resourceTimeInHours = secondsToHours(resourceTime);
+            return {
+              name: `x_${i}_${dayKey}`,
+              coef: resourceTimeInHours,
+            };
+          });
+          console.log("prodVars", prodVars);
 
           subjectTo.push({
             name: `cap_${res.id}_${dayKey}`,
             vars: prodVars.filter((v) => v.coef !== 0),
-            bnds: { type: glpk.GLP_UP, ub: res.capacity, lb: 0 },
+            bnds: { type: glpk.GLP_UP, ub: res.capacity },
           });
         });
       });
 
-      // 2) Demanda semanal para cada produto
+      // 2) Demanda semanal
       products.forEach((prod, i) => {
-        // Soma diária <= weeklyMax
         subjectTo.push({
           name: `weeklyMax_${i}`,
           vars: days.map((dayKey) => ({ name: `x_${i}_${dayKey}`, coef: 1 })),
-          bnds: { type: glpk.GLP_UP, ub: prod.weeklyMax, lb: 0 },
+          bnds: { type: glpk.GLP_UP, ub: prod.weeklyMax },
         });
 
-        // Soma diária >= weeklyMin
         subjectTo.push({
           name: `weeklyMin_${i}`,
           vars: days.map((dayKey) => ({ name: `x_${i}_${dayKey}`, coef: 1 })),
-          bnds: { type: glpk.GLP_LO, lb: prod.weeklyMin, ub: 0 },
+          bnds: { type: glpk.GLP_LO, lb: prod.weeklyMin },
         });
       });
 
+      console.log("customConstraints", customConstraints);
       // 3) Restrições personalizadas
       customConstraints.forEach((c, idx) => {
-        const vars = [];
-        products.forEach((prod, i) => {
-          days.forEach((dayKey) => {
-            const coef = c.coefficients[i] || 0;
-            if (coef !== 0) vars.push({ name: `x_${i}_${dayKey}`, coef });
-          });
-        });
+        const vars = products
+          .flatMap((prod, i) => {
+            const productIndex = c.productIds.indexOf(prod.id);
+            if (productIndex === -1) return [];
+            const coef = c.coefficients[productIndex];
+            return days.map((dayKey) => ({
+              name: `x_${i}_${dayKey}`,
+              coef: coef,
+            }));
+          })
+          .filter((v) => v?.coef !== 0);
 
         if (vars.length > 0) {
           const bndType =
@@ -334,14 +301,12 @@ function App() {
               : c.type === ">="
               ? glpk.GLP_LO
               : glpk.GLP_FX;
-
-          const bnd = {};
-          if (c.type === "<=") bnd.ub = c.value;
-          else if (c.type === ">=") bnd.lb = c.value;
-          else {
-            bnd.ub = c.value;
-            bnd.lb = c.value;
-          }
+          const bnd =
+            c.type === "<="
+              ? { ub: c.value }
+              : c.type === ">="
+              ? { lb: c.value }
+              : { ub: c.value, lb: c.value };
 
           subjectTo.push({
             name: `custom_${idx}`,
@@ -351,31 +316,27 @@ function App() {
         }
       });
 
-      // ===== Montar modelo =====
+      // Montar e resolver modelo
       const model = {
         name: "Mix_Producao_Semanal",
-        objective: {
-          direction: glpk.GLP_MAX,
-          name: "lucro_semanal",
-          vars: variables,
-        },
+        objective: { direction: glpk.GLP_MAX, vars: variables },
         subjectTo,
+        generals: variables.map((v) => v.name), // Variáveis inteiras
       };
 
-      // Resolver o modelo
-      const solverResponse = await glpk.solve(model, {
-        msglev: glpk.GLP_MSG_OFF, // Desligar mensagens para melhor performance
-        presol: true, // Usar pré-solucionador
-        tmlim: 5, // Limite de tempo de 5 segundos
-        tolr: 1e-4, // Tolerância relativa
-        tolb: 1e-4, // Tolerância absoluta
-      });
+      // Configurações para problemas inteiros
+      const solverOptions = {
+        msglev: glpk.GLP_MSG_OFF,
+        presol: true,
+        tmlim: 3,
+      };
+
+      const solverResponse = await glpk.solve(model, solverOptions);
 
       console.log("Solver response:", solverResponse);
 
       // Verificar resultado
       if (
-        !solverResponse ||
         !solverResponse.result ||
         typeof solverResponse.result.z === "undefined"
       ) {
@@ -387,18 +348,16 @@ function App() {
             [glpk.GLP_NOFEAS]: "Sem solução viável",
             [glpk.GLP_UNBND]: "Problema ilimitado",
             [glpk.GLP_UNDEF]: "Solução indefinida",
-          }[solverResponse.result.status] ||
-          `Status desconhecido: ${solverResponse.result.status}`;
+          }[solverResponse.result?.status] || "Status desconhecido";
 
         throw new Error(`Solver retornou: ${statusMsg}`);
       }
 
-      // Construir resultado detalhado (arredondando as quantidades)
+      // Processar resultados
       const production = products.map((prod, i) => {
         const dailyQuantities = days.map((dayKey) => {
-          const varName = `x_${i}_${dayKey}`;
-          const val = solverResponse.result.vars[varName];
-          return Math.round(Number(val || 0)); // Arredondar para inteiro
+          const val = solverResponse.result.vars[`x_${i}_${dayKey}`] || 0;
+          return Math.round(val); // Arredondar para garantir valor inteiro
         });
 
         return {
@@ -408,9 +367,17 @@ function App() {
         };
       });
 
+      // Verificação manual do lucro
+      let manualProfit = 0;
+      production.forEach((prod, i) => {
+        const unitProfit = products[i].salePrice - products[i].cost;
+        manualProfit += prod.total * unitProfit;
+      });
+
       setResults({
         profit: solverResponse.result.z,
         production,
+        manualProfit, // Para verificação
         status: solverResponse.result.status,
       });
     } catch (err) {
@@ -420,30 +387,6 @@ function App() {
       setLoading(false);
     }
   };
-
-  // Cenários de aplicação de horas extras
-  const overtimeScenarios = [
-    {
-      title: "Pico de Demanda",
-      description:
-        "Quando a produção planejada excede a capacidade normal em um dia específico para um recurso.",
-    },
-    {
-      title: "Atraso na Produção",
-      description:
-        "Quando atrasos em dias anteriores exigem produção extra para cumprir metas semanais.",
-    },
-    {
-      title: "Recurso Específico com Gargalo",
-      description:
-        "Quando um recurso específico (ex: máquina de costura) limita toda a produção.",
-    },
-    {
-      title: "Encomendas Urgentes",
-      description:
-        "Quando são recebidas encomendas especiais com prazo curto durante a semana.",
-    },
-  ];
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -513,16 +456,23 @@ function App() {
                 >
                   <div>
                     <span className="font-medium">{constraint.name}: </span>
-                    {products.map(
-                      (prod, i) =>
-                        constraint.coefficients[i] !== 0 && (
-                          <span key={i} className="mx-1">
-                            {constraint.coefficients[i] > 0 ? "+" : ""}
-                            {constraint.coefficients[i]}
-                            {prod.name}
-                          </span>
-                        )
-                    )}
+                    {products.map((prod) => {
+                      const productIndex = constraint.productIds.indexOf(
+                        prod.id
+                      );
+                      if (
+                        productIndex === -1 ||
+                        constraint.coefficients[productIndex] === 0
+                      )
+                        return null;
+                      return (
+                        <span key={prod.id} className="mx-1">
+                          {constraint.coefficients[productIndex] > 0 ? "+" : ""}
+                          {constraint.coefficients[productIndex]}
+                          {prod.name}
+                        </span>
+                      );
+                    })}
                     <span>
                       {" "}
                       {constraint.type} {constraint.value}
@@ -539,25 +489,6 @@ function App() {
             </ul>
           )}
         </div>
-      </div>
-
-      <div className="mt-8 bg-blue-50 rounded-lg p-6">
-        <h2 className="text-2xl font-bold text-blue-600 mb-4">
-          Quando Horas Extras Serão Aplicadas?
-        </h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {overtimeScenarios.map((scenario, index) => (
-            <div key={index} className="bg-white p-4 rounded-lg shadow">
-              <h3 className="font-bold text-blue-700">{scenario.title}</h3>
-              <p className="text-gray-700 mt-2">{scenario.description}</p>
-            </div>
-          ))}
-        </div>
-        <p className="mt-4 text-gray-700">
-          <strong>Observação:</strong> As horas extras só serão usadas quando o
-          lucro adicional gerado pela produção extra for maior que o custo das
-          horas extras.
-        </p>
       </div>
 
       <div className="mt-8 text-center">
