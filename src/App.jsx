@@ -1,5 +1,6 @@
 // src/App.js
 import React, { useState, useEffect } from "react";
+import DeleteIcon from "@mui/icons-material/Delete";
 import ProductForm from "./components/ProductForm";
 import ProductTable from "./components/ProductTable";
 import ResourceForm from "./components/ResourceForm";
@@ -440,8 +441,24 @@ function App() {
         </div>
 
         <div className="bg-white rounded-lg shadow-lg p-6">
-          <h2 className="text-2xl font-bold text-blue-600 mb-4">
+          <h2 className="text-2xl font-bold text-blue-600 mb-4 flex justify-between items-center">
             Restrições Adicionais
+            {customConstraints.length > 0 && (
+              <button
+                onClick={() => {
+                  if (
+                    window.confirm(
+                      "Tem certeza que deseja remover TODAS as restrições?"
+                    )
+                  ) {
+                    setCustomConstraints([]);
+                  }
+                }}
+                className="text-sm bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded"
+              >
+                Remover Todas
+              </button>
+            )}
           </h2>
           {customConstraints.length === 0 ? (
             <p className="text-gray-500">
@@ -452,7 +469,7 @@ function App() {
               {customConstraints.map((constraint) => (
                 <li
                   key={constraint.id}
-                  className="py-3 flex justify-between items-center"
+                  className="py-3 flex justify-between items-center group"
                 >
                   <div>
                     <span className="font-medium">{constraint.name}: </span>
@@ -479,10 +496,19 @@ function App() {
                     </span>
                   </div>
                   <button
-                    onClick={() => removeConstraint(constraint.id)}
-                    className="text-red-500 hover:text-red-700"
+                    onClick={() => {
+                      if (
+                        window.confirm(
+                          "Tem certeza que deseja remover esta restrição?"
+                        )
+                      ) {
+                        removeConstraint(constraint.id);
+                      }
+                    }}
+                    className="text-red-500 hover:text-red-700 opacity-0 group-hover:opacity-100 transition-opacity"
+                    title="Remover restrição"
                   >
-                    <i className="fas fa-trash" />
+                    <DeleteIcon />
                   </button>
                 </li>
               ))}
