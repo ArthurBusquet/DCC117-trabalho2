@@ -27,6 +27,7 @@ const ProductTable = ({ products, resources, onEdit, onRemove }) => {
 
   const handleEditChange = (e) => {
     const { name, value } = e.target;
+    console.log("teste", name);
     setEditForm((prev) => ({
       ...prev,
       [name]: name.startsWith("resource_")
@@ -130,7 +131,6 @@ const ProductTable = ({ products, resources, onEdit, onRemove }) => {
                   <td className="px-6 py-4 whitespace-nowrap">
                     {(editForm.salePrice - editForm.cost).toFixed(2)}
                   </td>
-                  {/* Campos de edição para weeklyMin e weeklyMax */}
                   <td className="px-6 py-4 whitespace-nowrap">
                     <input
                       type="number"

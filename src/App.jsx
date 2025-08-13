@@ -26,20 +26,20 @@ function App() {
           {
             id: "encapar_bojos",
             name: "Encapar Bojos",
-            capacity: 8,
+            capacity: 7.5,
           },
-          { id: "colocar_pala", name: "Colocar Pala", capacity: 8 },
+          { id: "colocar_pala", name: "Colocar Pala", capacity: 7.5 },
           {
             id: "colocar_vies",
             name: "Colocar Viés",
-            capacity: 24,
+            capacity: 23,
           },
           {
             id: "colocar_sandwich",
             name: "Colocar Sandwich",
-            capacity: 8,
+            capacity: 7.5,
           },
-          { id: "finalizacao", name: "Finalização", capacity: 24 },
+          { id: "finalizacao", name: "Finalização", capacity: 23 },
         ];
   });
 
@@ -180,11 +180,19 @@ function App() {
     const minResourceDemand = {};
     resources.forEach((res) => (minResourceDemand[res.id] = 0));
 
+    minResourceDemand["equipe_movel"] = 0;
+
     products.forEach((prod) =>
       resources.forEach((res) => {
         const resourceTime = prod.resources[res.id] || 0;
         const resourceTimeInHours = secondsToHours(resourceTime);
         minResourceDemand[res.id] += prod.weeklyMin * resourceTimeInHours;
+
+        // Calcular demanda combinada para equipe móvel
+        if (res.id === "colocar_vies" || res.id === "finalizacao") {
+          minResourceDemand["equipe_movel"] +=
+            prod.weeklyMin * resourceTimeInHours;
+        }
       })
     );
 
@@ -199,6 +207,20 @@ function App() {
         );
       }
     });
+
+    // Verificar equipe móvel
+    const capacidadeEquipeMovel =
+      resources.find((resource) => resource.id === "finalizacao").capacity *
+      days.length;
+    if (minResourceDemand["equipe_movel"] > capacidadeEquipeMovel) {
+      feasibilityIssues.push(
+        `Equipe Móvel (Viés + Finalização) sobrecarregada! ` +
+          `Demanda mínima combinada: ${minResourceDemand[
+            "equipe_movel"
+          ].toFixed(2)}h, ` +
+          `Capacidade: ${capacidadeEquipeMovel}h`
+      );
+    }
 
     if (feasibilityIssues.length > 0) {
       setValidationErrors(feasibilityIssues);
@@ -255,13 +277,42 @@ function App() {
               coef: resourceTimeInHours,
             };
           });
-          console.log("prodVars", prodVars);
 
           subjectTo.push({
             name: `cap_${res.id}_${dayKey}`,
             vars: prodVars.filter((v) => v.coef !== 0),
             bnds: { type: glpk.GLP_UP, ub: res.capacity },
           });
+        });
+      });
+
+      console.log(
+        "testeee",
+        resources.find((resource) => resource.id === "finalizacao").capacity
+      );
+
+      const capacidadeEquipeMovel = resources.find(
+        (resource) => resource.id === "finalizacao"
+      ).capacity; // Capacidade diária compartilhada
+      days.forEach((dayKey) => {
+        const prodVars = products.map((prod, i) => {
+          const timeVies = prod.resources["colocar_vies"] || 0;
+          const timeFinalizacao = prod.resources["finalizacao"] || 0;
+          const totalTime = timeVies + timeFinalizacao;
+
+          console.log("total time", totalTime);
+          const totalTimeInHours = secondsToHours(totalTime);
+
+          return {
+            name: `x_${i}_${dayKey}`,
+            coef: totalTimeInHours,
+          };
+        });
+
+        subjectTo.push({
+          name: `cap_equipe_movel_${dayKey}`,
+          vars: prodVars.filter((v) => v.coef !== 0),
+          bnds: { type: glpk.GLP_UP, ub: capacidadeEquipeMovel },
         });
       });
 
@@ -280,7 +331,7 @@ function App() {
         });
       });
 
-      console.log("customConstraints", customConstraints);
+      console.log("cap_equipe_movel", customConstraints);
       // 3) Restrições personalizadas
       customConstraints.forEach((c, idx) => {
         const vars = products
@@ -329,9 +380,9 @@ function App() {
       const solverOptions = {
         msglev: glpk.GLP_MSG_OFF,
         presol: true,
-        tmlim: 3,
+        tmlim: 2,
       };
-
+      console.log("modelo", model);
       const solverResponse = await glpk.solve(model, solverOptions);
 
       console.log("Solver response:", solverResponse);

@@ -94,11 +94,6 @@ const Results = ({ results }) => {
           <p className="text-3xl font-bold text-green-700 mt-2">
             R$ {results.profit.toFixed(2)}
           </p>
-          {results.manualProfit && (
-            <p className="text-sm mt-2">
-              (Verificação: R$ {results.manualProfit.toFixed(2)})
-            </p>
-          )}
         </div>
       </div>
 

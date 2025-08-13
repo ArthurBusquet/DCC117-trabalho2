@@ -121,7 +121,7 @@ const ProductForm = ({ onSubmit, resources }) => {
 
       <div>
         <h3 className="text-lg font-medium text-gray-700 mb-2">
-          Recursos Utilizados (horas/dia)
+          Recursos Utilizados (segundos/unidade)
         </h3>
         <div className="space-y-2">
           {resources.map((resource) => (

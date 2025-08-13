@@ -5,11 +5,11 @@
     "cost": 13.62,
     "salePrice": 20.9,
     "resources": {
-      "encapar_bojos": 150,
-      "colocar_pala": 120,
-      "colocar_vies": 90,
-      "colocar_sandwich": 60,
-      "finalizacao": 180
+      "encapar_bojos": 51,
+      "colocar_pala": 25,
+      "colocar_vies": 60,
+      "colocar_sandwich": 16,
+      "finalizacao": 60
     },
     "weeklyMin": 60,
     "weeklyMax": 1000
@@ -20,11 +20,11 @@
     "cost": 8.59,
     "salePrice": 18.5,
     "resources": {
-      "encapar_bojos": 144,
-      "colocar_pala": 138,
-      "colocar_vies": 84,
-      "colocar_sandwich": 75,
-      "finalizacao": 186
+      "encapar_bojos": 45,
+      "colocar_pala": 29,
+      "colocar_vies": 65,
+      "colocar_sandwich": 10,
+      "finalizacao": 66
     },
     "weeklyMin": 50,
     "weeklyMax": 700
@@ -35,11 +35,11 @@
     "cost": 10.97,
     "salePrice": 18.9,
     "resources": {
-      "encapar_bojos": 156,
-      "colocar_pala": 120,
-      "colocar_vies": 108,
-      "colocar_sandwich": 84,
-      "finalizacao": 192
+      "encapar_bojos": 53,
+      "colocar_pala": 23,
+      "colocar_vies": 52,
+      "colocar_sandwich": 17,
+      "finalizacao": 54
     },
     "weeklyMin": 40,
     "weeklyMax": 900
@@ -50,11 +50,11 @@
     "cost": 12.2,
     "salePrice": 22.0,
     "resources": {
-      "encapar_bojos": 180,
-      "colocar_pala": 150,
-      "colocar_vies": 132,
-      "colocar_sandwich": 105,
-      "finalizacao": 210
+      "encapar_bojos": 47,
+      "colocar_pala": 18,
+      "colocar_vies": 57,
+      "colocar_sandwich": 20,
+      "finalizacao": 70
     },
     "weeklyMin": 30,
     "weeklyMax": 500
@@ -65,11 +65,11 @@
     "cost": 12.29,
     "salePrice": 20.9,
     "resources": {
-      "encapar_bojos": 168,
-      "colocar_pala": 138,
-      "colocar_vies": 120,
-      "colocar_sandwich": 96,
-      "finalizacao": 198
+      "encapar_bojos": 60,
+      "colocar_pala": 28,
+      "colocar_vies": 58,
+      "colocar_sandwich": 13,
+      "finalizacao": 62
     },
     "weeklyMin": 20,
     "weeklyMax": 800
