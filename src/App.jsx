@@ -24,20 +24,21 @@ function App() {
       ? JSON.parse(saved)
       : [
           {
+            id: "colocar_sandwich",
+            name: "Colocar Sandwich",
+            capacity: 7.5,
+          },
+          { id: "colocar_pala", name: "Colocar Pala", capacity: 7.5 },
+
+          {
             id: "encapar_bojos",
             name: "Encapar Bojos",
             capacity: 7.5,
           },
-          { id: "colocar_pala", name: "Colocar Pala", capacity: 7.5 },
           {
             id: "colocar_vies",
             name: "Colocar Viés",
             capacity: 23,
-          },
-          {
-            id: "colocar_sandwich",
-            name: "Colocar Sandwich",
-            capacity: 7.5,
           },
           { id: "finalizacao", name: "Finalização", capacity: 23 },
         ];
