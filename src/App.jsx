@@ -61,13 +61,10 @@ function App() {
         const response = await fetch("/products.json");
         const data = await response.json();
 
-        console.log("data:", data);
-
         // Verificar se já temos produtos salvos no localStorage
         const savedProducts = localStorage.getItem("products");
 
         if (JSON.parse(savedProducts).length > 0) {
-          console.log("teste", savedProducts);
           setProducts(JSON.parse(savedProducts));
         } else {
           setProducts(data);
@@ -287,11 +284,6 @@ function App() {
         });
       });
 
-      console.log(
-        "testeee",
-        resources.find((resource) => resource.id === "finalizacao").capacity
-      );
-
       const capacidadeEquipeMovel = resources.find(
         (resource) => resource.id === "finalizacao"
       ).capacity; // Capacidade diária compartilhada
@@ -301,7 +293,6 @@ function App() {
           const timeFinalizacao = prod.resources["finalizacao"] || 0;
           const totalTime = timeVies + timeFinalizacao;
 
-          console.log("total time", totalTime);
           const totalTimeInHours = secondsToHours(totalTime);
 
           return {
@@ -332,7 +323,6 @@ function App() {
         });
       });
 
-      console.log("cap_equipe_movel", customConstraints);
       // 3) Restrições personalizadas
       customConstraints.forEach((c, idx) => {
         const vars = products
@@ -383,10 +373,8 @@ function App() {
         presol: true,
         tmlim: 2,
       };
-      console.log("modelo", model);
-      const solverResponse = await glpk.solve(model, solverOptions);
 
-      console.log("Solver response:", solverResponse);
+      const solverResponse = await glpk.solve(model, solverOptions);
 
       // Verificar resultado
       if (

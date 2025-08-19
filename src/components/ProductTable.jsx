@@ -27,7 +27,7 @@ const ProductTable = ({ products, resources, onEdit, onRemove }) => {
 
   const handleEditChange = (e) => {
     const { name, value } = e.target;
-    console.log("teste", name);
+
     setEditForm((prev) => ({
       ...prev,
       [name]: name.startsWith("resource_")
