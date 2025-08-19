@@ -251,12 +251,12 @@ function App() {
       if (!glpk || !glpk.solve)
         throw new Error("GLPK não carregado corretamente");
 
-      // Construir variáveis de produção (INTEIRAS)
+      // Construir variáveis de produção
       const variables = products.flatMap((prod, i) =>
         days.map((dayKey) => ({
           name: `x_${i}_${dayKey}`,
           coef: prod.salePrice - prod.cost,
-          type: glpk.GLP_IV, // VARIÁVEL INTEIRA
+          type: glpk.GLP_IV,
         }))
       );
 
@@ -364,10 +364,9 @@ function App() {
         name: "Mix_Producao_Semanal",
         objective: { direction: glpk.GLP_MAX, vars: variables },
         subjectTo,
-        generals: variables.map((v) => v.name), // Variáveis inteiras
+        generals: variables.map((v) => v.name),
       };
 
-      // Configurações para problemas inteiros
       const solverOptions = {
         msglev: glpk.GLP_MSG_OFF,
         presol: true,
